@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Shield, Network, Coins, FileText, Play } from "lucide-react"
+import { Shield, Network, Coins, FileText, Play, Zap, GitBranch, Lock, Server, Laptop, Github } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,11 @@ export default function LandingPage() {
             <Link href="/dashboard">
               <Button variant="ghost" className="text-sm tracking-wide text-muted-foreground hover:text-foreground">
                 ENTER DASHBOARD
+              </Button>
+            </Link>
+            <Link href="https://github.com/Arkham-dVPN" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                <Github className="h-5 w-5" />
               </Button>
             </Link>
           </div>
@@ -121,6 +126,129 @@ export default function LandingPage() {
               <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
                 Contribute bandwidth, earn rewards. The network grows stronger with every node that joins the cause.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Advanced Features Section */}
+      <section className="py-32 bg-card border-y border-border/50">
+        <div className="container mx-auto px-6">
+          <div className="mb-16 text-center">
+            <h2 className="text-sm tracking-[0.3em] text-muted-foreground">ADVANCED FEATURES</h2>
+          </div>
+          <div className="grid gap-12 md:grid-cols-3">
+            <div className="group relative flex flex-col items-center text-center">
+              <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-background/30 transition-all group-hover:border-primary group-hover:shadow-[0_0_30px_rgba(255,215,0,0.2)]">
+                <Zap className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="mb-3 text-xl font-light tracking-wide text-foreground">Intelligent Routing</h3>
+              <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+                Arkham automatically selects the fastest, lowest-latency peer available to ensure a smooth and responsive connection.
+              </p>
+            </div>
+            <div className="group relative flex flex-col items-center text-center">
+              <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-background/30 transition-all group-hover:border-primary group-hover:shadow-[0_0_30px_rgba(255,215,0,0.2)]">
+                <GitBranch className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="mb-3 text-xl font-light tracking-wide text-foreground">Multi-Hop Anonymity</h3>
+              <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+                For maximum privacy, you can chain your connection through multiple nodes, making it significantly harder to trace your traffic's origin.
+              </p>
+            </div>
+            <div className="group relative flex flex-col items-center text-center">
+              <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-background/30 transition-all group-hover:border-primary group-hover:shadow-[0_0_30px_rgba(255,215,0,0.2)]">
+                <Lock className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="mb-3 text-xl font-light tracking-wide text-foreground">Secure & Transparent</h3>
+              <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+                Built on WireGuard® with secure DNS to prevent leaks. The entire protocol is open for inspection.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Download CLI Section */}
+      <section className="py-32">
+        <div className="container mx-auto px-6">
+          <div className="mb-16 text-center">
+            <h2 className="text-sm tracking-[0.3em] text-muted-foreground">JOIN THE NETWORK</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-4xl font-light text-foreground">
+              Become a Node Operator
+            </p>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+              Contribute to a decentralized internet by running an Arkham node on your hardware. Download the CLI to get started.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start justify-center gap-8">
+            <div className="flex flex-col items-center gap-2">
+              <Button size="lg" variant="outline" className="w-full sm:w-64 gap-3 px-8 py-6 text-lg" asChild>
+                <Link href="/builds-1.0.0/arkham-cli-linux-amd64">
+                  <Image src="/icons8-linux-50.png" alt="Linux Logo" width={24} height={24} />
+                  Linux (x86)
+                </Link>
+              </Button>
+              <Link href="/builds-1.0.0/arkham-cli-linux-arm64" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                Download for ARM64
+              </Link>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Button size="lg" variant="outline" className="w-full sm:w-72 gap-3 px-8 py-6 text-lg" asChild>
+                <Link href="/builds-1.0.0/arkham-cli-macos-amd64">
+                  <Image src="/icons8-apple-30.png" alt="Apple Logo" width={24} height={24} />
+                  macOS (Intel)
+                </Link>
+              </Button>
+              <Link href="/builds-1.0.0/arkham-cli-macos-arm64" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                Download for Apple Silicon
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="py-32 bg-card border-y border-border/50">
+        <div className="container mx-auto px-6">
+          <div className="mb-16 text-center">
+            <h2 className="text-sm tracking-[0.3em] text-muted-foreground">HOW IT WORKS</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-4xl font-light text-foreground">
+              Get Started in Minutes
+            </p>
+          </div>
+          <div className="relative max-w-4xl mx-auto">
+            {/* The connecting line */}
+            <div className="absolute left-8 top-8 bottom-8 w-px bg-border hidden md:block" />
+
+            <div className="space-y-16">
+              <div className="relative flex items-start">
+                <div className="h-16 w-16 rounded-full bg-background border border-border flex items-center justify-center z-10 shrink-0">
+                  <span className="text-2xl font-light text-primary">1</span>
+                </div>
+                <div className="ml-8">
+                  <h3 className="text-xl font-light tracking-wide text-foreground mb-2">Download & Run the CLI</h3>
+                  <p className="text-muted-foreground">Download the appropriate binary for your system. Open your terminal, make the file executable (`chmod +x ./arkham-cli-linux-amd64`), and run it.</p>
+                </div>
+              </div>
+              <div className="relative flex items-start">
+                <div className="h-16 w-16 rounded-full bg-background border border-border flex items-center justify-center z-10 shrink-0">
+                  <span className="text-2xl font-light text-primary">2</span>
+                </div>
+                <div className="ml-8">
+                  <h3 className="text-xl font-light tracking-wide text-foreground mb-2">Start at Least Two Nodes</h3>
+                  <p className="text-muted-foreground">For the network to function, you need at least two nodes. Use the CLI to start one "Gateway Node" (with sudo) and at least one "Peer-Only Node" in separate terminal windows.</p>
+                </div>
+              </div>
+              <div className="relative flex items-start">
+                <div className="h-16 w-16 rounded-full bg-background border border-border flex items-center justify-center z-10 shrink-0">
+                  <span className="text-2xl font-light text-primary">3</span>
+                </div>
+                <div className="ml-8">
+                  <h3 className="text-xl font-light tracking-wide text-foreground mb-2">Use the Dashboard</h3>
+                  <p className="text-muted-foreground">Once your nodes are running, use the CLI menu to open the web dashboard. You'll see your active nodes and can "Activate The Veil" to secure your connection.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
