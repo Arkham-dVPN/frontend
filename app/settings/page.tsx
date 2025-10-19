@@ -8,9 +8,9 @@ import { useApiUrl } from "@/hooks/use-api-url";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 
 const gatewayNodes = [
-  { name: "Local Testnet", url: "http://localhost:8080", available: true },
-  { name: "Render Testnet", url: "https://arkham-dvpn.onrender.com", available: false },
-  { name: "Arkham Mainnet", url: "https://dvpn.arkham.io", available: true },
+  { name: "Local Gateway", url: "http://localhost:8080", available: true },
+  { name: "Gateway Ares", url: "https://arkham-dvpn.onrender.com", available: false },
+  { name: "Gateway Xena", url: "https://dvpn.arkham.io", available: false },
 ];
 
 export default function SettingsPage() {
