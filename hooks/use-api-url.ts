@@ -2,33 +2,42 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const API_URL_STORAGE_KEY = 'arkham_api_url';
-const DEFAULT_API_URL = 'https://arkham-obsidian.onrender.com';
+const PRODUCTION_API_URL = 'https://arkham-obsidian.onrender.com';
+const LOCAL_API_URL = 'http://localhost:8080';
+
+const getInitialApiUrl = () => {
+  if (typeof window === 'undefined') {
+    return PRODUCTION_API_URL;
+  }
+  const storedUrl = localStorage.getItem(API_URL_STORAGE_KEY);
+  if (storedUrl) {
+    return storedUrl;
+  }
+  return window.location.hostname === 'localhost' ? LOCAL_API_URL : PRODUCTION_API_URL;
+};
 
 export function useApiUrl() {
-  const [apiUrl, setApiUrl] = useState<string>(DEFAULT_API_URL);
-
-  useEffect(() => {
-    const storedUrl = localStorage.getItem(API_URL_STORAGE_KEY);
-    if (storedUrl) {
-      setApiUrl(storedUrl);
-    } else {
-      // For local development, default to localhost if nothing is set
-      if (window.location.hostname === 'localhost') {
-        setApiUrl('http://localhost:8080');
-      }
-    }
-  }, []);
+  const [apiUrl, setApiUrl] = useState<string>(getInitialApiUrl);
 
   const updateApiUrl = useCallback((newUrl: string) => {
     if (newUrl) {
       localStorage.setItem(API_URL_STORAGE_KEY, newUrl);
       setApiUrl(newUrl);
     } else {
-      // Reset to default
       localStorage.removeItem(API_URL_STORAGE_KEY);
-      const defaultUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : DEFAULT_API_URL;
+      const defaultUrl = window.location.hostname === 'localhost' ? LOCAL_API_URL : PRODUCTION_API_URL;
       setApiUrl(defaultUrl);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setApiUrl(getInitialApiUrl());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   return { apiUrl, updateApiUrl };

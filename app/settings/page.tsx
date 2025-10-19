@@ -1,25 +1,20 @@
 
 "use client"
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useApiUrl } from "@/hooks/use-api-url";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+
+const gatewayNodes = [
+  { name: "Local Testnet", url: "http://localhost:8080", available: true },
+  { name: "Render Testnet", url: "https://arkham-dvpn.onrender.com", available: false },
+  { name: "Arkham Mainnet", url: "https://dvpn.arkham.io", available: true },
+];
 
 export default function SettingsPage() {
   const { apiUrl, updateApiUrl } = useApiUrl();
-  const [localUrl, setLocalUrl] = useState(apiUrl);
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    updateApiUrl(localUrl);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -33,30 +28,43 @@ export default function SettingsPage() {
             </Button>
           </Link>
           <div className="text-2xl font-light tracking-wider text-foreground">SETTINGS</div>
-          <div className="w-40"></div>
+          <div className="w-48"></div> {/* Adjusted width for alignment */}
         </div>
       </header>
 
       <main className="container mx-auto px-6 py-12">
         <Card className="max-w-2xl mx-auto border-border/50 bg-card p-8">
-          <h2 className="text-lg font-medium mb-6">Backend Configuration</h2>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="api-url">Backend API URL</Label>
-              <p className="text-xs text-muted-foreground">
-                Set the URL for the Arkham backend node. Defaults to a public instance for demo purposes.
-              </p>
-              <Input
-                id="api-url"
-                value={localUrl}
-                onChange={(e) => setLocalUrl(e.target.value)}
-                placeholder="e.g., http://localhost:8080"
-              />
-            </div>
-            <Button onClick={handleSave} className="gap-2">
-              <Save className="h-4 w-4" />
-              <span>{saved ? "Saved!" : "Save Changes"}</span>
-            </Button>
+          <h2 className="text-lg font-medium mb-2">Gateway Node Selection</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Choose the API entrypoint for the Arkham network. This node acts as a bridge between the UI and the P2P network.
+          </p>
+          <div className="space-y-3">
+            {gatewayNodes.map((node) => (
+              <Button
+                key={node.url}
+                variant={apiUrl === node.url ? "secondary" : "outline"}
+                className="w-full justify-between h-12 text-left"
+                onClick={() => updateApiUrl(node.url)}
+                disabled={!node.available}
+              >
+                <div className="flex items-center">
+                  {node.available ? (
+                    <CheckCircle className="h-5 w-5 mr-3 text-green-500" />
+                  ) : (
+                    <XCircle className="h-5 w-5 mr-3 text-red-500" />
+                  )}
+                  <div>
+                    <p className="font-semibold">{node.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{node.url}</p>
+                  </div>
+                </div>
+                {apiUrl === node.url && (
+                  <div className="text-xs bg-primary/20 text-primary-foreground py-1 px-2 rounded-full">
+                    ACTIVE
+                  </div>
+                )}
+              </Button>
+            ))}
           </div>
         </Card>
       </main>
