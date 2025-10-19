@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useApiUrl } from "@/hooks/use-api-url";
+import { useHops } from "@/hooks/use-hops";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const gatewayNodes = [
   { name: "Local Gateway", url: "http://localhost:8080", available: true },
@@ -15,6 +17,7 @@ const gatewayNodes = [
 
 export default function SettingsPage() {
   const { apiUrl, updateApiUrl } = useApiUrl();
+  const { hops, updateHops } = useHops();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -65,6 +68,26 @@ export default function SettingsPage() {
                 )}
               </Button>
             ))}
+          </div>
+        </Card>
+
+        <Card className="mt-8 max-w-2xl mx-auto border-border/50 bg-card p-8">
+          <h2 className="text-lg font-medium mb-2">Multi-Hop Configuration</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Route your traffic through multiple nodes for enhanced anonymity. Each hop may increase latency.
+          </p>
+          <div className="text-center">
+            <ToggleGroup
+              type="single"
+              defaultValue="1"
+              value={hops}
+              onValueChange={(value) => value && updateHops(value)}
+              className="justify-center"
+            >
+              <ToggleGroupItem value="1" aria-label="1 hop">1 Hop</ToggleGroupItem>
+              <ToggleGroupItem value="2" aria-label="2 hops">2 Hops</ToggleGroupItem>
+              <ToggleGroupItem value="3" aria-label="3 hops">3 Hops</ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </Card>
       </main>
