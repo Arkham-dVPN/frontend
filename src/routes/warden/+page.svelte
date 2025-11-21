@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { userStore } from '$lib/stores/user';
 	import { toastStore } from '$lib/stores/toast';
+	import { nodeStore, type NodeStatus } from '$lib/stores/nodeStore';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
@@ -18,14 +20,30 @@
 	let showRegisterModal = $state(false);
 	let showFundModal = $state(false);
 	let showStakedModal = $state(false);
+	let nodeStatus = $state($nodeStore);
+
+	onMount(async () => {
+		await nodeStore.fetchStatus();
+	});
 
 	$effect(() => {
 		user = $userStore;
+		nodeStatus = $nodeStore;
 	});
 
-	function togglePower() {
-		userStore.toggleWardenActive();
-		toastStore.show(user.isWardenActive ? 'Warden service stopped' : 'Warden service started', 'success');
+	async function togglePower() {
+		try {
+			if (nodeStatus.isRunning) {
+				await nodeStore.stop();
+				toastStore.show('Warden P2P service stopped', 'success');
+			} else {
+				await nodeStore.start();
+				toastStore.show('Warden P2P service started', 'success');
+			}
+		} catch (error) {
+			toastStore.show('Failed to change node status', 'error');
+			console.error(error);
+		}
 	}
 
 	function onRegistrationSuccess() {
@@ -70,23 +88,43 @@
 			<div class="flex justify-center">
 				<button
 					onclick={togglePower}
-					class="w-32 h-32 rounded-full border-4 transition-all {user.isWardenActive
-						? 'bg-primary border-primary'
+					class="w-32 h-32 rounded-full border-4 transition-all {nodeStatus.isRunning
+						? 'bg-primary border-primary animate-pulse'
 						: 'bg-card border-border'}"
 				>
 					<Power
-						class="w-16 h-16 mx-auto {user.isWardenActive ? 'text-background' : 'text-muted-foreground'}"
+						class="w-16 h-16 mx-auto {nodeStatus.isRunning ? 'text-background' : 'text-muted-foreground'}"
 					/>
 				</button>
 			</div>
 
 			<div class="text-center">
 				<p
-					class="text-lg font-semibold {user.isWardenActive ? 'text-primary' : 'text-muted-foreground'}"
+					class="text-lg font-semibold {nodeStatus.isRunning ? 'text-primary' : 'text-muted-foreground'}"
 				>
-					{user.isWardenActive ? 'Service Active' : 'Service Inactive'}
+					{nodeStatus.isRunning ? 'P2P Service Active' : 'P2P Service Inactive'}
 				</p>
 			</div>
+
+			<!-- Node Status -->
+			{#if nodeStatus.isRunning && nodeStatus.peerId}
+				<Card class="p-6 bg-background/50">
+					<h3 class="text-lg font-semibold mb-2">Node Info</h3>
+					<div class="space-y-2 text-sm font-mono break-all">
+						<p><strong>Peer ID:</strong> {nodeStatus.peerId}</p>
+						{#if nodeStatus.addresses && nodeStatus.addresses.length > 0}
+						<div>
+							<strong>Addresses:</strong>
+							<ul class="list-disc pl-5 mt-1">
+								{#each nodeStatus.addresses as addr}
+									<li>{addr}</li>
+								{/each}
+							</ul>
+						</div>
+						{/if}
+					</div>
+				</Card>
+			{/if}
 
 			<!-- Wallet Balance -->
 			<Card class="p-6">
