@@ -14,7 +14,8 @@ export const load: PageLoad = async ({ fetch }) => {
 		return {
 			solHistory: [],
 			arkhamHistory: [],
-			connectionHistory: []
+			connectionHistory: [],
+			throughputHistory: [] 
 		};
 	}
 
@@ -29,7 +30,8 @@ export const load: PageLoad = async ({ fetch }) => {
 		return {
 			solHistory: historyData.solHistory || [],
 			arkhamHistory: historyData.arkhamHistory || [],
-			connectionHistory: historyData.connectionHistory || []
+			connectionHistory: historyData.connectionHistory || [],
+			throughputHistory: historyData.throughputHistory || []
 		};
 	} catch (error) {
 		console.error('Error loading history data:', error);
@@ -38,6 +40,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			solHistory: [],
 			arkhamHistory: [],
 			connectionHistory: [],
+			throughputHistory: [], 
 			error: (error as Error).message
 		};
 	}

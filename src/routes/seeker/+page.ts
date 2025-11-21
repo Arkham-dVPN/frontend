@@ -1,19 +1,17 @@
 import type { PageLoad } from './$types';
 
-// This load function runs on the client-side to fetch all necessary data for the warden dashboard.
+// This load function runs on the client-side to fetch all necessary data for the seeker dashboard.
 export const load: PageLoad = async ({ fetch }) => {
 	// Define fetchers for different data points to run them in parallel.
-	const fetchWardenStatus = async () => {
+	const fetchSeekerStatus = async () => {
 		try {
-			const res = await fetch('/api/warden-status?profile=warden');
+			const res = await fetch('/api/seeker-status?profile=seeker');
 			if (!res.ok) {
-				// If the profile doesn't exist, the API returns an error, which is expected.
-				// We'll treat it as not registered.
-				return { is_registered: false, warden: null };
+				return { is_registered: false, seeker: null };
 			}
 			return res.json();
 		} catch (e) {
-			return { is_registered: false, warden: null };
+			return { is_registered: false, seeker: null };
 		}
 	};
 
@@ -22,7 +20,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			const res = await fetch('/api/addresses');
 			if (!res.ok) return null;
 			const data = await res.json();
-			return data?.warden;
+			return data?.seeker;
 		} catch (e) {
 			return null;
 		}
@@ -30,7 +28,7 @@ export const load: PageLoad = async ({ fetch }) => {
 
 	const fetchBalance = async () => {
 		try {
-			const res = await fetch('/api/balance?profile=warden');
+			const res = await fetch('/api/balance?profile=seeker');
 			if (!res.ok) return { lamports: 0 };
 			return res.json();
 		} catch (e) {
@@ -53,7 +51,7 @@ export const load: PageLoad = async ({ fetch }) => {
 	const fetchArkhamBalance = async () => {
 		try {
 			const mint = '2NGz2GGAHVNL7yRm7if8K7RJ8ozy3Hms6UDRL8pHwDQU';
-			const res = await fetch(`/api/token-balance?profile=warden&mint=${mint}`);
+			const res = await fetch(`/api/token-balance?profile=seeker&mint=${mint}`);
 			if (!res.ok) return { uiAmount: 0 };
 			return res.json();
 		} catch (e) {
@@ -61,35 +59,51 @@ export const load: PageLoad = async ({ fetch }) => {
 		}
 	};
 
+	const fetchAvailableWardens = async () => {
+		try {
+			const res = await fetch('/api/wardens');
+			if (!res.ok) {
+				console.error('Failed to fetch wardens');
+				return [];
+			}
+			// The backend now returns the data in the format expected by the frontend.
+			return res.json();
+		} catch (e) {
+			console.error('Failed to fetch wardens:', e);
+			return []; // Return empty array on error
+		}
+	}
+
 	try {
 		// Run all fetches concurrently for performance.
-		const [statusData, address, balanceData, solPrice, arkhamBalanceData] = await Promise.all([
-			fetchWardenStatus(),
+		const [statusData, address, balanceData, solPrice, arkhamBalanceData, wardens] = await Promise.all([
+			fetchSeekerStatus(),
 			fetchAddress(),
 			fetchBalance(),
 			fetchSolPrice(),
-			fetchArkhamBalance()
+			fetchArkhamBalance(),
+			fetchAvailableWardens()
 		]);
 
-		// The new page.svelte uses 'wardenMetrics' for the warden object.
-		// Let's align with that.
 		return {
 			isRegistered: statusData.is_registered,
-			wardenMetrics: statusData.warden, // Pass the full warden object
+			seekerMetrics: statusData.seeker,
 			address: address,
 			balanceLamports: balanceData.lamports,
 			solPrice: solPrice,
-			arkhamBalance: arkhamBalanceData.uiAmount
+			arkhamBalance: arkhamBalanceData.uiAmount,
+			wardens: wardens
 		};
 	} catch (error: any) {
 		// Return a default state with an error message if anything goes wrong.
 		return {
 			isRegistered: false,
-			wardenMetrics: null,
+			seekerMetrics: null,
 			address: null,
 			balanceLamports: 0,
 			solPrice: 0,
 			arkhamBalance: 0,
+			wardens: [],
 			error: error.message
 		};
 	}

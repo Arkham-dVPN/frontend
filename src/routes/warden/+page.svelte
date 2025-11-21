@@ -107,6 +107,10 @@
 								>
 									Staked
 								</button>
+								<span class="mx-1">|</span>
+								<span>
+									{new Intl.NumberFormat().format(data.arkhamBalance || 0)} $ARKHAM
+								</span>
 							</p>
 						</div>
 					</div>

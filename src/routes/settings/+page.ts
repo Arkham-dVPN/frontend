@@ -2,7 +2,7 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch }) => {
   try {
-    const response = await fetch('http://localhost:8088/api/addresses');
+    const response = await fetch('/api/addresses');
     if (!response.ok) {
       throw new Error('Failed to fetch addresses');
     }

@@ -19,6 +19,14 @@
 		toastStore.show('Nickname updated successfully', 'success');
 	}
 
+	function switchRole() {
+		userStore.update((state) => {
+			const newRole = state.role === 'warden' ? 'seeker' : 'warden';
+			toastStore.show(`Switched role to ${newRole}`, 'success');
+			return { ...state, role: newRole };
+		});
+	}
+
 	function copyToClipboard(text: string, label: string) {
 		navigator.clipboard.writeText(text);
 		toastStore.show(`${label} copied to clipboard`, 'success');
@@ -70,6 +78,10 @@
 					<label class="text-sm text-muted-foreground mb-2 block">Current Role</label>
 					<p class="text-lg font-semibold capitalize">{$userStore.role || 'N/A'}</p>
 				</div>
+
+				<Button onclick={switchRole} class="w-full" variant="outline" disabled={!$userStore.role}>
+					Switch to {$userStore.role === 'warden' ? 'Seeker' : 'Warden'}
+				</Button>
 			</div>
 		</Card>
 
