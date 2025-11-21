@@ -74,15 +74,30 @@ export const load: PageLoad = async ({ fetch }) => {
 		}
 	}
 
+	const fetchP2PGraph = async () => {
+		try {
+			const res = await fetch('/api/p2p-graph');
+			if (!res.ok) {
+				console.error('Failed to fetch p2p graph');
+				return [];
+			}
+			return res.json();
+		} catch (e) {
+			console.error('Failed to fetch p2p graph:', e);
+			return [];
+		}
+	}
+
 	try {
 		// Run all fetches concurrently for performance.
-		const [statusData, address, balanceData, solPrice, arkhamBalanceData, wardens] = await Promise.all([
+		const [statusData, address, balanceData, solPrice, arkhamBalanceData, wardens, p2pGraph] = await Promise.all([
 			fetchSeekerStatus(),
 			fetchAddress(),
 			fetchBalance(),
 			fetchSolPrice(),
 			fetchArkhamBalance(),
-			fetchAvailableWardens()
+			fetchAvailableWardens(),
+			fetchP2PGraph()
 		]);
 
 		return {
@@ -92,7 +107,8 @@ export const load: PageLoad = async ({ fetch }) => {
 			balanceLamports: balanceData.lamports,
 			solPrice: solPrice,
 			arkhamBalance: arkhamBalanceData.uiAmount,
-			wardens: wardens
+			wardens: wardens,
+			p2pGraph: p2pGraph
 		};
 	} catch (error: any) {
 		// Return a default state with an error message if anything goes wrong.
@@ -104,6 +120,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			solPrice: 0,
 			arkhamBalance: 0,
 			wardens: [],
+			p2pGraph: [],
 			error: error.message
 		};
 	}

@@ -6,7 +6,8 @@
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import FundWalletModal from '$lib/components/FundWalletModal.svelte';
 	import ConnectWardenModal from '$lib/components/ConnectWardenModal.svelte';
-	import { Wallet, HardDrive, Star, MapPin } from 'lucide-svelte';
+	import WardenMap from '$lib/components/WardenMap.svelte';
+	import { Wallet, HardDrive, Star, MapPin, List, Map } from 'lucide-svelte';
 	import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 	let { data } = $props<PageData>();
@@ -15,6 +16,7 @@
 	let showFundModal = $state(false);
 	let showConnectModal = $state(false);
 	let selectedWarden = $state<any>(null);
+	let viewMode: 'list' | 'map' = $state('list');
 
 	$effect(() => {
 		user = $userStore;
@@ -86,51 +88,78 @@
 			</Card>
 		</div>
 
-		<!-- Warden List -->
+		<!-- Warden List / Map -->
 		<div>
-			<h2 class="text-2xl font-bold mb-4">Available Wardens</h2>
-			<div class="space-y-3">
-				{#if data.wardens.length > 0}
-					{#each data.wardens as warden}
-					<Card class="p-4 hover:border-primary transition-colors">
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-4 flex-1">
-								<div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-									<span class="text-primary font-bold">{warden.id}</span>
-								</div>
-								
-								<div class="flex-1">
-									<p class="font-semibold text-lg">{warden.nickname}</p>
-									<div class="flex items-center gap-4 text-sm text-muted-foreground">
-										<span class="flex items-center gap-1">
-											<MapPin class="w-4 h-4" />
-											{warden.location}
-										</span>
-										<span class="flex items-center gap-1">
-											<Star class="w-4 h-4 fill-primary text-primary" />
-											{warden.reputation}
-										</span>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">Available Wardens</h2>
+				<div class="flex items-center gap-2 rounded-lg bg-muted p-1">
+					<Button
+						size="sm"
+						variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+						onclick={() => viewMode = 'list'}
+						class="gap-2"
+					>
+						<List class="h-4 w-4" />
+						List
+					</Button>
+					<Button
+						size="sm"
+						variant={viewMode === 'map' ? 'secondary' : 'ghost'}
+						onclick={() => viewMode = 'map'}
+						class="gap-2"
+					>
+						<Map class="h-4 w-4" />
+						Map
+					</Button>
+				</div>
+			</div>
+
+			{#if viewMode === 'list'}
+				<div class="space-y-3">
+					{#if data.wardens.length > 0}
+						{#each data.wardens as warden}
+						<Card class="p-4 hover:border-primary transition-colors">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-4 flex-1">
+									<div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+										<span class="text-primary font-bold">{warden.id.slice(0, 2)}</span>
+									</div>
+									
+									<div class="flex-1">
+										<p class="font-semibold text-lg">{warden.nickname}</p>
+										<div class="flex items-center gap-4 text-sm text-muted-foreground">
+											<span class="flex items-center gap-1">
+												<MapPin class="w-4 h-4" />
+												{warden.location}
+											</span>
+											<span class="flex items-center gap-1">
+												<Star class="w-4 h-4 fill-primary text-primary" />
+												{warden.reputation.toFixed(2)}
+											</span>
+										</div>
+									</div>
+
+									<div class="text-right">
+										<p class="text-2xl font-bold text-primary">${warden.price.toFixed(2)}</p>
+										<p class="text-xs text-muted-foreground">per GB</p>
 									</div>
 								</div>
 
-								<div class="text-right">
-									<p class="text-2xl font-bold text-primary">${warden.price}</p>
-									<p class="text-xs text-muted-foreground">per GB</p>
-								</div>
+								<Button onclick={() => connectToWarden(warden)} class="ml-4">
+									Connect
+								</Button>
 							</div>
-
-							<Button onclick={() => connectToWarden(warden)} class="ml-4">
-								Connect
-							</Button>
-						</div>
-					</Card>
-					{/each}
-				{:else}
-					<Card class="p-6 text-center text-muted-foreground">
-						<p>No wardens available at the moment. Please check back later.</p>
-					</Card>
-				{/if}
-			</div>
+						</Card>
+						{/each}
+					{:else}
+						<Card class="p-6 text-center text-muted-foreground">
+							<p>No wardens available at the moment. Please check back later.</p>
+						</Card>
+					{/if}
+				</div>
+			{:else}
+				<WardenMap wardens={data.wardens} p2pGraph={data.p2pGraph} />
+			{/if}
 		</div>
 	</div>
 </div>
