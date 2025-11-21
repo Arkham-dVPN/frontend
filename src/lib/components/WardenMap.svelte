@@ -1,7 +1,4 @@
 <script lang="ts">
-	import Tooltip from '$lib/components/ui/tooltip/tooltip.svelte';
-	import TooltipContent from '$lib/components/ui/tooltip/tooltip-content.svelte';
-	import TooltipTrigger from '$lib/components/ui/tooltip/tooltip-trigger.svelte';
 	import { Zap } from 'lucide-svelte';
 
 	let { wardens, p2pGraph } = $props<{ wardens: any[], p2pGraph: any[] }>();
@@ -31,6 +28,8 @@
 				};
 			});
 	});
+
+	let hoveredWarden: any | null = $state(null);
 </script>
 
 <div class="relative aspect-[2/1] overflow-hidden rounded-lg border border-border/50 bg-secondary/30">
@@ -40,30 +39,33 @@
 	</svg>
 	<div class="absolute inset-0">
 		{#each onlineWardens as warden}
-			<Tooltip>
-				<TooltipTrigger asChild>
-                    <div
-                        class="absolute h-3 w-3 rounded-full bg-primary animate-pulse-glow"
-                        style="left: {warden.coords.x}; top: {warden.coords.y};"
-                    />
-				</TooltipTrigger>
-				<TooltipContent>
-					<div class="max-w-xs break-all text-xs">
-						<p class="font-bold">Warden:</p>
-						<p class="font-mono mb-2">{warden.nickname} ({warden.id.slice(0, 8)}...)</p>
-						<div class="flex items-center gap-2 mb-2">
-							<Zap class="h-3 w-3 text-primary" />
-							<span class="font-bold">Latency:</span>
-							<span class="font-mono">{warden.latency > 0 ? `${warden.latency} ms` : 'N/A'}</span>
-						</div>
-						<p class="font-bold">Price:</p>
-						<p class="font-mono mb-2">${warden.price} / GB</p>
-					</div>
-				</TooltipContent>
-			</Tooltip>
+			<div
+				class="absolute h-3 w-3 rounded-full bg-primary animate-pulse-glow cursor-pointer"
+				style="left: {warden.coords.x}; top: {warden.coords.y};"
+				on:mouseenter={() => hoveredWarden = warden}
+				on:mouseleave={() => hoveredWarden = null}
+			/>
 		{/each}
 
 		<!-- User location -->
 		<div class="absolute h-4 w-4 rounded-full bg-blue-500" style="left: 25%; top: 55%;" title="Your Location"></div>
+
+		<!-- Tooltip -->
+		{#if hoveredWarden}
+			<div
+				class="absolute bg-card text-card-foreground rounded-lg shadow-lg p-3 text-xs max-w-xs break-all pointer-events-none"
+				style="left: {hoveredWarden.coords.x}; top: {hoveredWarden.coords.y}; transform: translate(15px, -100%);"
+			>
+				<p class="font-bold">Warden:</p>
+				<p class="font-mono mb-2">{hoveredWarden.nickname} ({hoveredWarden.id.slice(0, 8)}...)</p>
+				<div class="flex items-center gap-2 mb-2">
+					<Zap class="h-3 w-3 text-primary" />
+					<span class="font-bold">Latency:</span>
+					<span class="font-mono">{hoveredWarden.latency > 0 ? `${hoveredWarden.latency} ms` : 'N/A'}</span>
+				</div>
+				<p class="font-bold">Price:</p>
+				<p class="font-mono mb-2">${hoveredWarden.price.toFixed(2)} / GB</p>
+			</div>
+		{/if}
 	</div>
 </div>
