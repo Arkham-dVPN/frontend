@@ -4,8 +4,7 @@
 	import TooltipTrigger from '$lib/components/ui/tooltip/tooltip-trigger.svelte';
 	import { Zap } from 'lucide-svelte';
 
-	export let wardens: any[] = [];
-	export let p2pGraph: any[] = [];
+	let { wardens, p2pGraph } = $props<{ wardens: any[], p2pGraph: any[] }>();
 
 	const peerIdToCoords = (peerId: string) => {
 		let hash = 0;
