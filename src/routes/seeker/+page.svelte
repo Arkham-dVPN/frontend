@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
 	import { userStore } from '$lib/stores/user';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
@@ -17,6 +18,15 @@
 	let showConnectModal = $state(false);
 	let selectedWarden = $state<any>(null);
 	let viewMode: 'list' | 'map' = $state('list');
+
+	onMount(async () => {
+		try {
+			// Start the P2P node for discovery when the seeker dashboard loads
+			await fetch('/api/node/start', { method: 'POST' });
+		} catch (e) {
+			console.error('Failed to start P2P node for discovery:', e);
+		}
+	});
 
 	$effect(() => {
 		user = $userStore;
