@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { userStore } from '$lib/stores/user';
 	import { toastStore } from '$lib/stores/toast';
-	import { nodeStore, type NodeStatus } from '$lib/stores/nodeStore';
+	import { nodeStore } from '$lib/stores/nodeStore';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
@@ -11,26 +10,90 @@
 	import WalletAddressCard from '$lib/components/WalletAddressCard.svelte';
 	import StakedBalanceModal from '$lib/components/StakedBalanceModal.svelte';
 	import { Power, Wallet, Users, HardDrive, Coins, TrendingUp } from 'lucide-svelte';
-	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
 
-	let { data }: { data: PageData } = $props();
-
-	let user = $state($userStore);
+	// --- Component State ---
+	let isLoading = $state(true);
 	let showRegisterModal = $state(false);
 	let showFundModal = $state(false);
 	let showStakedModal = $state(false);
+
+	// --- Data from API ---
+	let wardenStatus: any = $state(null);
+	let solBalance: number | null = $state(null);
+	let arkhamBalance: number | null = $state(null);
+	let solPrice: number = $state(150); // Default price, will be updated
+
+	// --- Derived State from Stores ---
+	let user = $state($userStore);
 	let nodeStatus = $state($nodeStore);
 
-	onMount(async () => {
-		await nodeStore.fetchStatus();
+	// --- Data Fetching ---
+	async function fetchData(profile: string | null) {
+		if (!profile) return;
+
+		isLoading = true;
+		try {
+			const solPricePromise = fetch(
+				'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
+			)
+				.then((res) => res.json())
+				.then((data) => data?.solana?.usd || 150)
+				.catch(() => 150); // Fallback on error
+
+			const [statusRes, solRes, arkhamRes, price] = await Promise.all([
+				fetch(`/api/warden-status?profile=${profile}`),
+				fetch(`/api/balance?profile=${profile}`),
+				fetch(
+					`/api/token-balance?profile=${profile}&mint=2NGz2GGAHVNL7yRm7if8K7RJ8ozy3Hms6UDRL8pHwDQU`
+				),
+				solPricePromise
+			]);
+
+			if (!statusRes.ok || !solRes.ok || !arkhamRes.ok) {
+				throw new Error('Failed to fetch warden data');
+			}
+
+			wardenStatus = await statusRes.json();
+			const solData = await solRes.json();
+			solBalance = solData.lamports;
+
+			const arkhamData = await arkhamRes.json();
+			arkhamBalance = arkhamData.uiAmount;
+
+			solPrice = price;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'An unknown error occurred';
+			toastStore.show(message, 'error');
+			console.error('Error fetching warden data:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// --- Effects ---
+	$effect(() => {
+		// This effect runs whenever the selected profile changes
+		fetchData($userStore.selectedProfile);
 	});
 
 	$effect(() => {
+		// Keep local state in sync with store state
 		user = $userStore;
 		nodeStatus = $nodeStore;
 	});
 
+	$effect(() => {
+		// Auto-start node for unregistered wardens only after data is loaded
+		if (wardenStatus && !wardenStatus.is_registered && !nodeStatus.isRunning) {
+			nodeStore.start().catch(err => {
+				console.error('Failed to auto-start node for registration:', err);
+				toastStore.show('Failed to start P2P node for registration.', 'error');
+			});
+		}
+	});
+
+	// --- UI Actions ---
 	async function togglePower() {
 		try {
 			if (nodeStatus.isRunning) {
@@ -48,21 +111,22 @@
 
 	function onRegistrationSuccess() {
 		showRegisterModal = false;
-		invalidateAll();
+		// Refetch data for the current profile
+		fetchData($userStore.selectedProfile);
 	}
 </script>
 
-{#if data.error}
+{#if isLoading}
 	<div class="min-h-screen flex items-center justify-center p-4 text-center">
-		<p class="text-destructive">{data.error}</p>
+		<p class="text-muted-foreground">Loading Warden Data...</p>
 	</div>
-{:else if !data.isRegistered || !data.wardenMetrics}
+{:else if !wardenStatus?.is_registered}
 	<div class="min-h-screen flex items-center justify-center p-4 pb-24">
 		<div class="w-full max-w-md space-y-6 text-center">
 			<WalletAddressCard
-				address={data.address}
-				balanceLamports={data.balanceLamports}
-				solPrice={data.solPrice}
+				profileName={$userStore.selectedProfile}
+				solBalance={solBalance}
+				arkhamBalance={arkhamBalance}
 			/>
 			<div>
 				<h1 class="text-2xl font-bold">Become a Warden</h1>
@@ -113,14 +177,14 @@
 					<div class="space-y-2 text-sm font-mono break-all">
 						<p><strong>Peer ID:</strong> {nodeStatus.peerId}</p>
 						{#if nodeStatus.addresses && nodeStatus.addresses.length > 0}
-						<div>
-							<strong>Addresses:</strong>
-							<ul class="list-disc pl-5 mt-1">
-								{#each nodeStatus.addresses as addr}
-									<li>{addr}</li>
-								{/each}
-							</ul>
-						</div>
+							<div>
+								<strong>Addresses:</strong>
+								<ul class="list-disc pl-5 mt-1">
+									{#each nodeStatus.addresses as addr}
+										<li>{addr}</li>
+									{/each}
+								</ul>
+							</div>
 						{/if}
 					</div>
 				</Card>
@@ -133,10 +197,10 @@
 						<Wallet class="w-8 h-8 text-primary" />
 						<div>
 							<p class="text-sm text-muted-foreground">Wallet Balance</p>
-							<p class="text-2xl font-bold">{(data.balanceLamports / 1_000_000_000).toFixed(4)} SOL</p>
+							<p class="text-2xl font-bold">{(solBalance / 1_000_000_000).toFixed(4)} SOL</p>
 							<p class="text-sm text-muted-foreground">
 								<span>
-									${((data.balanceLamports / 1_000_000_000) * data.solPrice).toFixed(2)} USD
+									${((solBalance / 1_000_000_000) * solPrice).toFixed(2)} USD
 								</span>
 								<span class="mx-1">|</span>
 								<button
@@ -147,7 +211,7 @@
 								</button>
 								<span class="mx-1">|</span>
 								<span>
-									{new Intl.NumberFormat().format(data.arkhamBalance || 0)} $ARKHAM
+									{new Intl.NumberFormat().format(arkhamBalance || 0)} $ARKHAM
 								</span>
 							</p>
 						</div>
@@ -163,7 +227,7 @@
 						<Users class="w-8 h-8 text-primary" />
 						<div>
 							<p class="text-sm text-muted-foreground">Active Connections</p>
-							<p class="text-3xl font-bold">{data.wardenMetrics.activeConnections}</p>
+							<p class="text-3xl font-bold">{wardenStatus.warden.activeConnections}</p>
 						</div>
 					</div>
 				</Card>
@@ -174,7 +238,7 @@
 						<div>
 							<p class="text-sm text-muted-foreground">Bandwidth Served</p>
 							<p class="text-3xl font-bold">
-								{(data.wardenMetrics.totalBandwidthServed / 1000).toFixed(2)} GB
+								{(wardenStatus.warden.totalBandwidthServed / 1000).toFixed(2)} GB
 							</p>
 						</div>
 					</div>
@@ -186,12 +250,10 @@
 						<div>
 							<p class="text-sm text-muted-foreground">Unclaimed SOL</p>
 							<p class="text-2xl font-bold">
-								{(data.wardenMetrics.pendingClaims / 1_000_000_000).toFixed(4)} SOL
+								{(wardenStatus.warden.pendingClaims / 1_000_000_000).toFixed(4)} SOL
 							</p>
 							<p class="text-xs text-muted-foreground">
-								${((data.wardenMetrics.pendingClaims / 1_000_000_000) * data.solPrice).toFixed(
-									2
-								)}
+								${((wardenStatus.warden.pendingClaims / 1_000_000_000) * solPrice).toFixed(2)}
 							</p>
 						</div>
 					</div>
@@ -203,7 +265,7 @@
 						<div>
 							<p class="text-sm text-muted-foreground">Unclaimed ARKHAM</p>
 							<p class="text-2xl font-bold">
-								{(data.wardenMetrics.arkhamTokensEarned / 1_000_000_000).toFixed(4)}
+								{(wardenStatus.warden.arkhamTokensEarned / 1_000_000_000).toFixed(4)}
 							</p>
 							<p class="text-xs text-muted-foreground">$ARKHAM</p>
 						</div>
@@ -216,7 +278,7 @@
 				<h3 class="text-lg font-semibold mb-4">Active Connections Over Time</h3>
 				<div class="h-64 flex items-end gap-2">
 					{#each [2, 3, 1, 4, 3, 5, 3, 4, 2, 3] as value}
-						<div class="flex-1 bg-primary rounded-t" style="height: {value * 20}%" />
+						<div class="flex-1 bg-primary rounded-t" style="height: {value * 20}%"></div>
 					{/each}
 				</div>
 			</Card>
@@ -227,19 +289,22 @@
 <BottomNav active="home" />
 
 {#if showRegisterModal}
-	<RegisterWardenModal onclose={onRegistrationSuccess} />
+	<RegisterWardenModal
+		profileName={$userStore.selectedProfile}
+		on:close={onRegistrationSuccess}
+	/>
 {/if}
 
 {#if showFundModal}
-	<FundWalletModal onclose={() => (showFundModal = false)} />
+	<FundWalletModal on:close={() => (showFundModal = false)} />
 {/if}
 
-{#if showStakedModal}
+{#if showStakedModal && wardenStatus?.warden}
 	<StakedBalanceModal
-		walletBalance={data.balanceLamports / 1_000_000_000}
-		stakeAmount={data.wardenMetrics.stakeAmount}
-		stakeToken={data.wardenMetrics.stakeToken}
-		solUsdPrice={data.solPrice}
+		walletBalance={solBalance / 1_000_000_000}
+		stakeAmount={wardenStatus.warden.stakeAmount}
+		stakeToken={wardenStatus.warden.stakeToken}
+		solUsdPrice={solPrice}
 		on:close={() => (showStakedModal = false)}
 	/>
 {/if}

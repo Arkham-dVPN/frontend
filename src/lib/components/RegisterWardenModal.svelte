@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { userStore } from '$lib/stores/user';
 	import { toastStore } from '$lib/stores/toast';
+	import { nodeStore } from '$lib/stores/nodeStore';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { X } from 'lucide-svelte';
@@ -24,6 +25,16 @@
 		}
 
 		try {
+			// Start the P2P node to get the peer ID for registration
+			try {
+				await nodeStore.start();
+				toastStore.show('Starting P2P node for registration...', 'info');
+			} catch (startError) {
+				toastStore.show('Failed to start P2P node. Please start it manually and try again.', 'error');
+				isLoading = false;
+				return;
+			}
+
 			const response = await fetch('/api/register-warden', {
 				method: 'POST',
 				headers: {
@@ -46,6 +57,16 @@
 			userStore.registerWarden();
 			toastStore.show('Successfully registered as Warden!', 'success');
 			console.log('Registration successful, tx:', result.transactionSignature);
+
+			// Stop the node after successful registration
+			try {
+				await nodeStore.stop();
+				toastStore.show('Node stopped. Use the power button to go online.', 'info');
+			} catch (stopError) {
+				console.error('Failed to stop node after registration:', stopError);
+				toastStore.show('Failed to automatically stop the node.', 'warning');
+			}
+
 			onclose();
 		} catch (error: any) {
 			toastStore.show(`Error: ${error.message}`, 'error');
@@ -128,14 +149,19 @@
           <p class="text-xs text-muted-foreground mt-1">Minimum: 0.1 {selectedToken}</p>
         </div>
 
-        <div class="bg-muted p-4 rounded-lg">
-          <p class="text-sm text-muted-foreground">You are staking:</p>
-          <p class="text-2xl font-bold text-primary">{amount || '0'} {selectedToken}</p>
-        </div>
+         <div class="bg-muted p-4 rounded-lg">
+           <p class="text-sm text-muted-foreground">You are staking:</p>
+           <p class="text-2xl font-bold text-primary">{amount || '0'} {selectedToken}</p>
+         </div>
 
-        <Button onclick={register} class="w-full" disabled={!amount || parseFloat(amount) < 0.1}>
-          Register & Stake
-        </Button>
+         <div class="flex gap-2">
+           <Button onclick={() => step = 1} variant="outline" class="flex-1">
+             Back
+           </Button>
+           <Button onclick={register} class="flex-1" disabled={!amount || parseFloat(amount) < 0.1}>
+             Register & Stake
+           </Button>
+         </div>
       </div>
     {/if}
   </div>

@@ -17,7 +17,7 @@
 		solPrice: number | undefined;
 	}>();
 
-	let canvas: HTMLCanvasElement;
+	let canvas: HTMLCanvasElement | null = $state(null);
 
 	const balanceSol = $derived(balanceLamports ? balanceLamports / 1_000_000_000 : 0);
 	const balanceUsd = $derived(balanceSol * (solPrice || 0));

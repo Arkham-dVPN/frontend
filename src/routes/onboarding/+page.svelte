@@ -130,7 +130,7 @@
 
 		<div class="flex justify-center gap-2 mt-8">
 			{#each [1, 2, 3, 4] as s}
-				<div class="w-2 h-2 rounded-full {step === s ? 'bg-primary' : 'bg-muted'}" />
+				<div class="w-2 h-2 rounded-full {step === s ? 'bg-primary' : 'bg-muted'}"></div>
 			{/each}
 		</div>
 	</div>

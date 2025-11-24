@@ -91,6 +91,9 @@
 <div
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
 	on:click|self={handleClose}
+	on:keydown={(e) => e.key === 'Enter' && handleClose()}
+	role="button"
+	tabindex="0"
 >
 	<div class="relative w-full max-w-md rounded-lg border bg-card text-card-foreground shadow-xl">
 		<div class="flex flex-col space-y-1.5 p-6">

@@ -11,34 +11,30 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let nickname = $state($userStore.nickname);
+	let newProfileName = $state('');
 	let isLoading = $state(false);
 
-	function saveNickname() {
-		userStore.update((state) => ({ ...state, nickname }));
-		toastStore.show('Nickname updated successfully', 'success');
-	}
-
-	function switchRole() {
-		userStore.update((state) => {
-			const newRole = state.role === 'warden' ? 'seeker' : 'warden';
-			toastStore.show(`Switched role to ${newRole}`, 'success');
-			return { ...state, role: newRole };
-		});
-	}
-
 	function copyToClipboard(text: string, label: string) {
+		if (!navigator.clipboard) {
+			toastStore.show('Clipboard API not available', 'error');
+			return;
+		}
 		navigator.clipboard.writeText(text);
 		toastStore.show(`${label} copied to clipboard`, 'success');
 	}
 
-	async function createProfile(role: 'warden' | 'seeker') {
+	async function createProfile() {
+		if (!newProfileName.trim()) {
+			toastStore.show('Profile name cannot be empty', 'error');
+			return;
+		}
+
 		isLoading = true;
 		try {
 			const response = await fetch('/api/create-profile', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ profile: role })
+				body: JSON.stringify({ profileName: newProfileName })
 			});
 
 			if (!response.ok) {
@@ -46,9 +42,9 @@
 				throw new Error(errorText || 'Failed to create profile');
 			}
 
-			const result = await response.json();
-			toastStore.show(`Successfully created ${role} profile!`, 'success');
-			// Invalidate all data to re-run all load functions
+			toastStore.show(`Successfully created profile "${newProfileName}"!`, 'success');
+			newProfileName = ''; // Clear input
+			// Invalidate all data to re-run all load functions, which will update the profile switcher
 			await invalidateAll();
 		} catch (error: any) {
 			toastStore.show(`Error: ${error.message}`, 'error');
@@ -62,25 +58,22 @@
 	<div class="max-w-4xl mx-auto space-y-6">
 		<h1 class="text-3xl font-bold">Settings</h1>
 
-		<!-- Nickname -->
+		<!-- Create New Profile -->
 		<Card class="p-6">
-			<h2 class="text-xl font-semibold mb-4">Profile</h2>
-			<div class="space-y-4">
-				<div>
-					<label for="nickname" class="text-sm text-muted-foreground mb-2 block">Nickname</label>
-					<div class="flex gap-2">
-						<Input bind:value={nickname} class="flex-1" id="nickname" />
-						<Button onclick={saveNickname}>Save</Button>
-					</div>
-				</div>
-
-				<div>
-					<label class="text-sm text-muted-foreground mb-2 block">Current Role</label>
-					<p class="text-lg font-semibold capitalize">{$userStore.role || 'N/A'}</p>
-				</div>
-
-				<Button onclick={switchRole} class="w-full" variant="outline" disabled={!$userStore.role}>
-					Switch to {$userStore.role === 'warden' ? 'Seeker' : 'Warden'}
+			<h2 class="text-xl font-semibold mb-4">Create New Profile</h2>
+			<p class="text-sm text-muted-foreground mb-4">
+				Create a new profile to manage a separate set of warden and seeker wallets.
+			</p>
+			<div class="flex gap-2">
+				<Input
+					bind:value={newProfileName}
+					placeholder="e.g. MyNode, David, etc."
+					class="flex-1"
+					id="newProfile"
+					disabled={isLoading}
+				/>
+				<Button onclick={createProfile} disabled={isLoading}>
+					{isLoading ? 'Creating...' : 'Create'}
 				</Button>
 			</div>
 		</Card>
@@ -89,61 +82,27 @@
 		<Card class="p-6">
 			<h2 class="text-xl font-semibold mb-4">Wallet Addresses</h2>
 			<div class="space-y-4">
-				<!-- Warden Wallet -->
-				<div>
-					<label for="wardenWallet" class="text-sm text-muted-foreground mb-2 block"
-						>Warden Wallet</label
-					>
-					{#if data.addresses?.warden}
-						<div class="flex gap-2">
-							<Input
-								value={data.addresses.warden}
-								readonly
-								class="flex-1 font-mono text-sm"
-								id="wardenWallet"
-							/>
-							<Button
-								variant="outline"
-								size="icon"
-								onclick={() => copyToClipboard(data.addresses.warden, 'Warden wallet')}
+				{#if data.addresses && Object.keys(data.addresses).length > 0}
+					{#each Object.entries(data.addresses) as [name, address]}
+						<div>
+							<label for={name} class="text-sm text-muted-foreground mb-2 block capitalize"
+								>{name.replace('_', ' ')}</label
 							>
-								<Copy class="w-4 h-4" />
-							</Button>
+							<div class="flex gap-2">
+								<Input id={name} value={address} readonly class="flex-1 font-mono text-sm" />
+								<Button
+									variant="outline"
+									size="icon"
+									onclick={() => copyToClipboard(address, name)}
+								>
+									<Copy class="w-4 h-4" />
+								</Button>
+							</div>
 						</div>
-					{:else}
-						<Button onclick={() => createProfile('warden')} disabled={isLoading} class="w-full">
-							{isLoading ? 'Generating...' : 'Generate Warden Wallet'}
-						</Button>
-					{/if}
-				</div>
-
-				<!-- Seeker Wallet -->
-				<div>
-					<label for="seekerWallet" class="text-sm text-muted-foreground mb-2 block"
-						>Seeker Wallet</label
-					>
-					{#if data.addresses?.seeker}
-						<div class="flex gap-2">
-							<Input
-								value={data.addresses.seeker}
-								readonly
-								class="flex-1 font-mono text-sm"
-								id="seekerWallet"
-							/>
-							<Button
-								variant="outline"
-								size="icon"
-								onclick={() => copyToClipboard(data.addresses.seeker, 'Seeker wallet')}
-							>
-								<Copy class="w-4 h-4" />
-							</Button>
-						</div>
-					{:else}
-						<Button onclick={() => createProfile('seeker')} disabled={isLoading} class="w-full">
-							{isLoading ? 'Generating...' : 'Generate Seeker Wallet'}
-						</Button>
-					{/if}
-				</div>
+					{/each}
+				{:else}
+					<p class="text-center text-muted-foreground">No wallets found.</p>
+				{/if}
 			</div>
 		</Card>
 	</div>

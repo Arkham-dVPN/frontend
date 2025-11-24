@@ -39,12 +39,13 @@
 	</svg>
 	<div class="absolute inset-0">
 		{#each onlineWardens as warden}
-			<div
+			<button
 				class="absolute h-3 w-3 rounded-full bg-primary animate-pulse-glow cursor-pointer"
 				style="left: {warden.coords.x}; top: {warden.coords.y};"
-				on:mouseenter={() => hoveredWarden = warden}
-				on:mouseleave={() => hoveredWarden = null}
-			/>
+				onmouseenter={() => hoveredWarden = warden}
+				onmouseleave={() => hoveredWarden = null}
+				aria-label="Warden {warden.nickname}"
+			></button>
 		{/each}
 
 		<!-- User location -->
