@@ -17,6 +17,7 @@
 	let showRegisterModal = $state(false);
 	let showFundModal = $state(false);
 	let showStakedModal = $state(false);
+	let accountHealth = $state<{ corrupted: boolean; error?: string } | null>(null);
 
 	// --- Data from API ---
 	let wardenStatus: any = $state(null);
@@ -75,6 +76,22 @@
 	$effect(() => {
 		// This effect runs whenever the selected profile changes
 		fetchData($userStore.selectedProfile);
+		checkAccountHealth($userStore.selectedProfile);
+	});
+
+	$effect(() => {
+		// Keep local state in sync with store state
+		user = $userStore;
+	});
+
+	$effect(() => {
+		// Auto-start node for unregistered wardens
+		if (wardenStatus && !wardenStatus.is_registered && !nodeStatus.isRunning) {
+			nodeStore.start().catch(err => {
+				console.error('Failed to auto-start node for registration:', err);
+				toastStore.show('Failed to start P2P node for registration.', 'error');
+			});
+		}
 	});
 
 	$effect(() => {
@@ -105,6 +122,39 @@
 			}
 		} catch (error) {
 			toastStore.show('Failed to change node status', 'error');
+			console.error(error);
+		}
+	}
+
+	async function checkAccountHealth(profile: string | null) {
+		if (!profile) return;
+		try {
+			const response = await fetch(`/api/check-warden-corruption?profile=${profile}`);
+			if (response.ok) {
+				accountHealth = await response.json();
+			}
+		} catch (error) {
+			console.error('Failed to check account health:', error);
+		}
+	}
+
+	async function migrateAccount() {
+		try {
+			const response = await fetch('/api/migrate-warden', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: `profile=${encodeURIComponent($userStore.selectedProfile || '')}`
+			});
+			if (response.ok) {
+				toastStore.show('Account migrated successfully!', 'success');
+				// Refresh data
+				fetchData($userStore.selectedProfile);
+				checkAccountHealth($userStore.selectedProfile);
+			} else {
+				toastStore.show('Migration failed', 'error');
+			}
+		} catch (error) {
+			toastStore.show('Migration failed', 'error');
 			console.error(error);
 		}
 	}
@@ -219,6 +269,31 @@
 					<Button onclick={() => (showFundModal = true)} variant="outline"> Fund Wallet </Button>
 				</div>
 			</Card>
+
+			<!-- Account Health -->
+			{#if accountHealth?.corrupted}
+				<Card class="p-6 border-destructive">
+					<div class="flex items-center justify-between">
+						<div>
+							<h3 class="text-lg font-semibold text-destructive">Account Issue Detected</h3>
+							<p class="text-sm text-muted-foreground">Your warden account data appears corrupted. This may prevent you from appearing in seeker dashboards.</p>
+						</div>
+						<Button onclick={migrateAccount} variant="destructive">
+							Fix Account
+						</Button>
+					</div>
+				</Card>
+			{:else if accountHealth && !accountHealth.corrupted}
+				<Card class="p-6 border-green-500">
+					<div class="flex items-center gap-3">
+						<div class="w-3 h-3 rounded-full bg-green-500"></div>
+						<div>
+							<h3 class="text-lg font-semibold">Account Healthy</h3>
+							<p class="text-sm text-muted-foreground">Your warden account is functioning normally.</p>
+						</div>
+					</div>
+				</Card>
+			{/if}
 
 			<!-- Metrics -->
 			<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
